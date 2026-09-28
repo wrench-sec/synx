@@ -1,0 +1,134 @@
+name: nxc
+aliases:
+  - netexec
+  - crackmapexec
+  - cme
+category: active-directory
+homepage: https://github.com/Orange-Cyberdefense/NetExec
+description: >-
+  Network service enumeration and administration tool for Windows networks.
+  NetExec is the maintained successor of CrackMapExec: it speaks SMB, LDAP,
+  WinRM, RDP, MSSQL, SSH and other protocols with a single command line and
+  reports what each account or host exposes.
+notes: >-
+  Documented syntax covers the common options only. nxc renames several
+  CrackMapExec flags between major versions, so confirm a flag with
+  'nxc <protocol> --help' for the version you have installed.
+commands:
+  - name: SMB
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password>
+    description: >-
+      Connects to an SMB service using the supplied credentials and reports
+      the signing state, OS build and name of the target.
+    tags: [smb, credentials]
+    example: nxc smb 10.0.0.5 -d CORP -u 'user' -p 'password'
+  - name: WinRM
+    syntax: nxc winrm <target> -d <domain> -u <username> -p <password>
+    description: >-
+      Connects to a Windows host through WinRM using the supplied credentials
+      and reports the remote user privileges.
+    tags: [winrm, credentials]
+    example: nxc winrm 10.0.0.5 -d CORP -u 'user' -p 'password'
+  - name: LDAP
+    syntax: nxc ldap <target> -d <domain> -u <username> -p <password>
+    description: >-
+      Connects to an LDAP service using the supplied credentials and reports
+      the domain naming context and naming contexts it exposes.
+    tags: [ldap, credentials]
+    example: nxc ldap 10.0.0.5 -d CORP -u 'user' -p 'password'
+  - name: SMB local authentication
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --local-auth
+    description: >-
+      Validates credentials locally instead of against the SMB service, which
+      turns failures into name-resolution errors and slows the connection down.
+    tags: [smb, credentials]
+    notes: Only useful when the target cannot be reached over SMB.
+  - name: SMB share enumeration
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --shares
+    description: Lists the SMB shares published by the target and their permissions.
+    tags: [smb, shares, enumeration]
+    notes: Short form is -S; CrackMapExec used the same flag.
+  - name: SMB user enumeration
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --enum-users
+    description: >-
+      Enumerates the users of the target's local SAM through RPC, optionally
+      filtered with --userlist and reported with --users.
+    tags: [smb, enumeration, users]
+    notes: >-
+      Flag names differ between CrackMapExec and NetExec releases; check
+      'nxc smb --help'.
+  - name: SMB session enumeration
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --enum-sessions
+    description: Lists the currently authenticated SMB sessions on the target.
+    tags: [smb, enumeration, sessions]
+  - name: SMB SAM dump
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --sam
+    description: >-
+      Extracts the remote machine's local SAM hive with administrative
+      privileges and prints the hashed credentials it contains.
+    tags: [smb, credentials, privileges]
+    notes: Requires a local administrator on the target.
+  - name: SMB NTLM capture
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --ntlm
+    description: >-
+      Requests the machine account's NTLM secrets when the target is a domain
+      controller or the account is privileged.
+    tags: [smb, credentials, ntlm]
+    notes: >-
+      Only domain controllers and privileged accounts hold the secrets; other
+      targets return an error.
+  - name: SMB remote execution
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> -x psexec.py
+    description: >-
+      Executes a program on the remote host over SMBEXEC and returns the
+      output; -X does the same with a binary instead of a script.
+    tags: [smb, execution]
+    notes: >-
+      This is a documented interface only; synx never runs the command for
+      you and you must be authorised on the target.
+  - name: SMB file transfer
+    syntax: nxc smb <target> -d <domain> -u <username> -p <password> --put-file <local-path> <remote-path>
+    description: >-
+      Copies a local file to an administrative share on the target, and
+      retrieves one with --get-file.
+    tags: [smb, files]
+  - name: LDAP BloodHound collection
+    syntax: nxc ldap <target> -d <domain> -u <username> -p <password> --bloodhound
+    description: >-
+      Collects LDAP objects and sessions into a BloodHound-compatible ZIP file
+      for import.
+    tags: [ldap, bloodhound, collection]
+    notes: >-
+      Collection modules are version-specific; use 'nxc ldap -M list' on the
+      installed version to see the available ones.
+  - name: LDAP object search
+    syntax: nxc ldap <target> -d <domain> -u <username> -p <password> --search <filter>
+    description: >-
+      Runs an arbitrary LDAP search filter and prints the matching objects.
+    tags: [ldap, enumeration]
+    example: nxc ldap 10.0.0.5 -d CORP -u 'user' -p 'password' --search '(objectClass=Computer)'
+  - name: RDP
+    syntax: nxc rdp <target> -d <domain> -u <username> -p <password>
+    description: >-
+      Authenticates against the Remote Desktop service and reports the NLA
+      state and certificate information of the target.
+    tags: [rdp, credentials]
+  - name: MSSQL
+    syntax: nxc mssql <target> -d <domain> -u <username> -p <password>
+    description: >-
+      Authenticates to the Microsoft SQL Server service and reports whether the
+      supplied account is a database administrator.
+    tags: [mssql, credentials]
+  - name: SSH
+    syntax: nxc ssh <target> -u <username> -p <password>
+    description: >-
+      Authenticates against an SSH service and reports the host key and
+      authentication banner.
+    tags: [ssh, credentials]
+  - name: Protocol help
+    syntax: nxc <protocol> --help
+    description: >-
+      Lists every option supported for a protocol, including the modules and
+      filters that are specific to the installed version.
+    tags: [help, reference]
+    example: nxc smb --help

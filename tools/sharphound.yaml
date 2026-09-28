@@ -1,0 +1,77 @@
+name: sharphound
+aliases:
+  - SharpHound
+  - SharpHound.exe
+category: active-directory
+homepage: https://github.com/SpecterOps/SharpHound
+description: >-
+  C# data collector for BloodHound that runs on a Windows host. It reads the
+  directory through LDAP and talks to domain-joined machines to collect group
+  memberships, sessions, ACLs and trust data, then writes a ZIP archive that the
+  BloodHound GUI imports.
+notes: >-
+  Run it on a Windows machine, ideally one that is already domain joined. Pick
+  the build that matches your BloodHound CE instance from the web interface
+  under Settings, Download Collectors. Running with no flags collects the
+  default method for the current domain.
+commands:
+  - name: Default collection
+    syntax: SharpHound.exe --CollectionMethods Default
+    description: >-
+      Collects group memberships, trusts, abusable rights, GPO links, the OU
+      tree, object properties and SQL admin links, then attempts session
+      collection from every domain-joined computer.
+    tags: [collection, bloodhound]
+  - name: Full collection
+    syntax: SharpHound.exe --CollectionMethods All
+    description: >-
+      Runs every collection method available in the installed version and
+      writes the results to a ZIP file.
+    tags: [collection, bloodhound]
+  - name: Specific methods
+    syntax: SharpHound.exe --CollectionMethods Session,ACL,Container
+    description: >-
+      Runs a comma-separated list of methods, for example to collect sessions
+      and access control lists without repeating the default data.
+    tags: [collection, acl, sessions]
+  - name: Explicit domain
+    syntax: SharpHound.exe --CollectionMethods Default -d <domain>
+    description: >-
+      Collects from a specific domain, which is what you want when the collector
+      runs on a host that is not joined to the target domain.
+    tags: [collection, ldap]
+  - name: Session loop
+    syntax: SharpHound.exe --CollectionMethods Session --Loop
+    description: >-
+      Repeats the session collection on a timer and writes a new ZIP file after
+      each pass, which tracks where accounts are logged on over time.
+    tags: [collection, sessions]
+    notes: Set the duration with --Loopduration in HH:MM:SS form.
+  - name: Loop duration
+    syntax: SharpHound.exe --CollectionMethods Session --Loop --Loopduration 03:00:00
+    description: Runs the session loop for the given time instead of the default two hours.
+    tags: [collection, sessions]
+  - name: Stealth collection
+    syntax: SharpHound.exe --CollectionMethods Default --stealth
+    description: >-
+      Requests data in a way that makes less noise on the domain controller and
+      the member hosts.
+    tags: [collection, stealth]
+  - name: Output directory
+    syntax: SharpHound.exe --CollectionMethods Default --outputdirectory <path>
+    description: Writes the collected files to a chosen folder on the collector host.
+    tags: [collection, output]
+  - name: Named ZIP archive
+    syntax: SharpHound.exe --CollectionMethods Default --zipfilename <name>.zip
+    description: Names the resulting archive instead of using the timestamped default.
+    tags: [collection, output]
+  - name: Uncompressed output
+    syntax: SharpHound.exe --CollectionMethods Default --nozip
+    description: >-
+      Leaves the JSON files uncompressed, which is useful when another tool
+      consumes them directly.
+    tags: [collection, output]
+  - name: Help
+    syntax: SharpHound.exe --help
+    description: Lists every collection method and option supported by the installed build.
+    tags: [help, reference]

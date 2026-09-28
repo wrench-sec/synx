@@ -1,0 +1,79 @@
+name: plumhound
+aliases:
+  - PlumHound.py
+category: active-directory
+homepage: https://github.com/PlumHound/PlumHound
+description: >-
+  Reporting engine for BloodHound. It turns the Cypher queries held in a task
+  list file, or a single ad-hoc query, into HTML and CSV reports aimed at blue
+  and purple teams rather than at raw graph output.
+notes: >-
+  PlumHound reads the same Neo4j database that BloodHound imports into, so a
+  SharpHound or bloodhound-python collection has to be loaded first. Any query
+  containing a double quote has to use single quotes in the task list file.
+commands:
+  - name: Connectivity test
+    syntax: PlumHound.py --easy
+    description: >-
+      Tests the database connection with the default credentials and prints the
+      domain users, which is the quickest way to check the setup.
+    tags: [setup, neo4j]
+  - name: Run a task list
+    syntax: PlumHound.py -x tasks/default.tasks
+    description: >-
+      Executes every task in the file and writes one report per task; the
+      bundled default.tasks is a ready-made starting point.
+    tags: [reporting, tasks]
+  - name: Database connection
+    syntax: PlumHound.py -x tasks/default.tasks -s <bolt-uri> -u <username> -p <password>
+    description: >-
+      Connects to a specific Neo4j instance. The defaults are
+      bolt://localhost:7687 with the neo4j account.
+    tags: [reporting, neo4j]
+  - name: Single query to standard output
+    syntax: PlumHound.py -q <query>
+    description: Runs one Cypher query and prints the rows to standard output.
+    tags: [reporting, cypher]
+  - name: Single query as a report
+    syntax: PlumHound.py -q <query> --title <title> --of <file>.html --op <path> --ox HTML
+    description: >-
+      Writes the result of one query as an HTML report; --ox also accepts CSV
+      and stdout.
+    tags: [reporting, html]
+  - name: Quiet output
+    syntax: PlumHound.py -x tasks/default.tasks -v 0
+    description: >-
+      Sets the verbosity to zero so the tool acts as a plain Neo4j query
+      handler, without the banner and progress output.
+    tags: [output]
+  - name: Busiest shortest path
+    syntax: PlumHound.py -bp short 5
+    description: >-
+      Finds the five shortest paths that give the largest number of users a
+      route to Domain Admins.
+    tags: [paths, bloodhound]
+    notes: >-
+      Requires the BlueHound module from https://github.com/scoubi/BlueHound.
+  - name: Busiest path of any length
+    syntax: PlumHound.py -bp all 5
+    description: >-
+      Does the same as the shortest variant but with allshortestpaths, so paths
+      of any length are considered.
+    tags: [paths, bloodhound]
+  - name: Analyse a path
+    syntax: PlumHound.py -ap <label>
+    description: >-
+      Finds which relationship has to be broken to stop every path between two
+      nodes, which gives the administrator something concrete to fix. The label
+      is one of User, Group, Computer, OU or GPO, and the target group is
+      assumed to be Domain Admins; pass both a start and an end node instead to
+      choose them.
+    tags: [paths, remediation]
+  - name: Encrypted connection
+    syntax: PlumHound.py --easy -s <bolt-uri> -u <username> -p <password> --UseEnc
+    description: Enables encryption when talking to the Neo4j server.
+    tags: [neo4j]
+  - name: Help
+    syntax: PlumHound.py -h
+    description: Lists every execution mode and option supported by the installed version.
+    tags: [help, reference]

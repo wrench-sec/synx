@@ -1,0 +1,102 @@
+name: certipy
+aliases:
+  - certipy-ad
+  - certipy.py
+category: active-directory
+homepage: https://github.com/ollyrob/Certipy
+description: >-
+  Tool and Python library for enumerating and analysing Active Directory
+  Certificate Services (AD CS), including the enterprise CA configuration,
+  published templates and the certificates they issue.
+notes: >-
+  Options are taken from the Certipy documentation and the 'certipy <command>
+  -h' output. Command names and flags changed between the 3.x and 4.x series,
+  so confirm a flag with the version you have installed.
+commands:
+  - name: find
+    syntax: certipy find -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Searches an Active Directory environment for certificate services
+      information, the CA configuration, the published templates and the
+      permissions that are configured on them.
+    tags: [enumeration, adcs, certificate]
+    version: Certipy 3.x and 4.x
+    example: certipy find -u 'user' -p 'password' -dc-ip 10.0.0.1 -target corp.example.com
+  - name: auth
+    syntax: certipy auth -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Authenticates against Active Directory and retrieves a Kerberos TGT for
+      the account, so the command can be chained with the other subcommands.
+    tags: [authentication, kerberos]
+    notes: Add -no-pass-callback when no interactive callback is available.
+    example: certipy auth -u 'user' -p 'password' -dc-ip 10.0.0.1 -target corp.example.com
+  - name: shadow
+    syntax: certipy shadow -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Adds a shadow credential to an account and returns the plaintext value
+      that can be used to authenticate as that user.
+    tags: [persistence, credentials]
+    notes: >-
+      Requires the ability to write msDS-KeyCredentialLink on the target
+      account. The added credential can be removed with 'shadow -remove'.
+  - name: req
+    syntax: certipy req -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn> -template <template>
+    description: >-
+      Enrols an account in a certificate template and writes the resulting
+      PFX/PEM file and private key to disk.
+    tags: [enrollment, certificate, adcs]
+    notes: -out and -upn can be added to request a specific subject name.
+  - name: adcs
+    syntax: certipy adcs -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Dumps the raw AD CS configuration of the domain, including the CA
+      certificates and their configuration partitions.
+    tags: [enumeration, adcs]
+  - name: cacerts
+    syntax: certipy cacerts -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Enumerates the CA certificates that are published in the directory and
+      reports the ones issued by enterprise CAs.
+    tags: [enumeration, adcs, certificate]
+  - name: template
+    syntax: certipy template -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn>
+    description: >-
+      Lists the certificate templates that are published in Active Directory
+      and their configured properties and permissions.
+    tags: [enumeration, adcs, template]
+    notes: >-
+      Certipy 4.x can read and write individual template definitions with the
+      --template, --write and --enable flags.
+  - name: rogue
+    syntax: certipy rogue -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn> -ca <ca-name>
+    description: >-
+      Requests a certificate from a vulnerable CA configuration, using
+      -install to update the CA so the template is enabled.
+    tags: [adcs, certificate, escalation]
+    notes: >-
+      Only applicable to CA configurations that are still vulnerable; most
+      modern installations have closed this path. Confirm you are authorised
+      before testing any CA.
+  - name: enroll
+    syntax: certipy enroll -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn> -template <template>
+    description: >-
+      Authenticates with a previously obtained certificate or PFX file and
+      enrols a new one from the given template.
+    tags: [enrollment, certificate, adcs]
+  - name: esc4
+    syntax: certipy template -u <username> -p <password> -dc-ip <dc-ip> -target <fqdn> --template <template> --write <file>
+    description: >-
+      Reads the definition of a published template so that it can be reviewed
+      and, in an authorised test, modified and re-published.
+    tags: [adcs, template, versioning]
+    version: Certipy 4.x
+    notes: >-
+      Template modification is a defensive-testing technique; only perform it
+      on environments you own.
+  - name: help
+    syntax: certipy <command> -h
+    description: >-
+      Prints the full option list of a subcommand, including the flags that are
+      specific to the installed version.
+    tags: [help, reference]
+    example: certipy find -h

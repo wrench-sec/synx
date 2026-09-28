@@ -1,0 +1,96 @@
+name: bloodyad
+aliases:
+  - bloodyAD
+  - bloodyAD.py
+category: active-directory
+homepage: https://github.com/CravateRouge/bloodyAD
+description: >-
+  Active Directory privilege escalation swiss army knife that issues targeted
+  LDAP calls against a domain controller. It can enumerate directory objects,
+  group membership, trust and DNS records, inspect access control lists, and
+  read or modify the attributes that lead to privilege escalation.
+notes: >-
+  Authenticate with a cleartext password, an NTLM hash in ':<hash>' form, a
+  Kerberos ticket or a client certificate. Most modules need a domain and a
+  host; pass --dns or --dc to control how the domain controller is located.
+  Exchange of sensitive information without LDAPS is supported.
+commands:
+  - name: Help
+    syntax: bloodyAD --help
+    description: Lists every module, its subcommands and the global options.
+    tags: [help, reference]
+  - name: Get object attributes
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get object <target> --resolve-sd
+    description: >-
+      Fetches the attributes of one directory object. With --resolve-sd the
+      security descriptor is translated into a readable set of permissions.
+    tags: [enumeration, ldap, acl]
+    example: bloodyAD -H 10.0.0.1 -d CORP.LOCAL -u 'user' -p 'password' get object 'DC=corp,DC=local' --resolve-sd
+  - name: Get group membership
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get membership <target>
+    description: Lists the groups an account belongs to, directly and transitively.
+    tags: [enumeration, groups]
+  - name: Get children
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get children <target>
+    description: >-
+      Lists the objects contained by a container, organisational unit or domain,
+      such as the users, groups, computers and OUs of the domain.
+    tags: [enumeration, ldap]
+  - name: Get writable objects
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get writable <target>
+    description: >-
+      Lists the objects the authenticated account can write to, which are the
+      starting points of most privilege escalation paths.
+    tags: [enumeration, privileges, ldap]
+  - name: Get trusts
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get trusts <domain>
+    description: Displays the domain and forest trusts as an ASCII tree.
+    tags: [enumeration, trusts]
+  - name: Get DNS records
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get dnsDump <target>
+    description: >-
+      Extracts the AD-integrated DNS zones held by the domain controller, which
+      can reveal hosts that are not registered elsewhere.
+    tags: [enumeration, dns]
+  - name: Search
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get search <filter> --resolve-guid
+    description: >-
+      Runs an arbitrary LDAP search filter. GUIDs in the output can be resolved
+      to readable names with --resolve-guid.
+    tags: [enumeration, ldap, search]
+  - name: BloodHound collection
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get bloodhound
+    description: >-
+      Runs the built-in BloodHound CE collector and writes the result to a ZIP
+      file for import.
+    tags: [collection, bloodhound]
+  - name: msLDAP operations
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> msldap <operation>
+    description: >-
+      Exposes the underlying msldap library calls, such as adding a computer
+      account or shadow credentials, when a dedicated module does not cover the
+      change you need.
+    tags: [ldap, post-exploitation]
+  - name: Set password
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> set password <target> <new-password>
+    description: Sets the password of an account using the supplied credentials.
+    tags: [credentials, ldap]
+    notes: Requires rights over the target object.
+  - name: JSON output
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p <password> get membership <target> --json
+    description: >-
+      Emits machine-readable JSON instead of formatted text, which suits piping
+      the output into other tooling.
+    tags: [output, json]
+  - name: Pass-the-hash authentication
+    syntax: bloodyAD -H <dc-ip> -d <domain> -u <username> -p :<ntlm-hash> get membership <target>
+    description: >-
+      Authenticates with an NTLM hash by passing it as the password, so no
+      plaintext credential is needed.
+    tags: [credentials, pass-the-hash, ntlm]
+  - name: Kerberos authentication
+    syntax: bloodyAD -H <dc-ip> -d <domain> -k get membership <target>
+    description: >-
+      Uses the credential cache instead of command-line credentials, which keeps
+      the password out of the shell history.
+    tags: [credentials, kerberos]

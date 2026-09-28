@@ -1,0 +1,108 @@
+name: impacket
+aliases:
+  - impacket-toolkit
+  - impacket-scripts
+category: post-exploitation
+homepage: https://github.com/fortra/impacket
+description: >-
+  Collection of Python classes and scripts for working with network protocols,
+  most of them SMB, LDAP, Kerberos, NTLM, MS-SQL and WMI. Every example is
+  installed as a console script named impacket-<script>.
+notes: >-
+  Recent releases install each example as an 'impacket-<name>' console script;
+  older installations run the same files as 'python3 <name>.py'. Examples
+  require valid credentials and a properly configured KDC.
+commands:
+  - name: impacket-secretsdump
+    syntax: impacket-secretsdump -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Dumps the NTLM hashes, Kerberos tickets and cached credentials of a
+      target or of the whole domain.
+    tags: [credentials, ntlm, kerberos, smb]
+    example: impacket-secretsdump -target 10.0.0.1 -domain CORP -u 'user' -p 'password'
+  - name: impacket-GetUserSPNs
+    syntax: impacket-GetUserSPNs -dc-ip <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Requests Kerberos service tickets for accounts with an SPN so that their
+      service ticket hashes can be recovered offline, without touching the
+      services.
+    tags: [kerberos, credentials, enumeration]
+    version: Impacket example scripts
+    example: impacket-GetUserSPNs -dc-ip 10.0.0.1 -domain CORP -u 'user' -p 'password'
+  - name: impacket-psexec
+    syntax: impacket-psexec -target <dc-ip> -domain <domain> -u <username> -p <password> <command>
+    description: >-
+      Executes a command on a remote Windows host over SMB by uploading a
+      service and reading its output.
+    tags: [smb, execution, remote]
+    example: impacket-psexec -target 10.0.0.5 -domain CORP -u 'user' -p 'password' 'hostname'
+  - name: impacket-smbexec
+    syntax: impacket-smbexec -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Executes commands on a remote host over SMB without uploading a service
+      binary, by driving cmd.exe directly through the service control manager.
+    tags: [smb, execution, remote]
+  - name: impacket-wmiexec
+    syntax: impacket-wmiexec -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Executes a command on a remote host over DCOM/WMI, which is useful where
+      SMBEXEC is blocked.
+    tags: [smb, wmi, execution, remote]
+  - name: impacket-dcomexec
+    syntax: impacket-dcomexec -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Executes a command on a remote host over DCOM with a raw shell, without
+      creating a service.
+    tags: [dcom, execution, remote]
+  - name: impacket-atexec
+    syntax: impacket-atexec -target <dc-ip> -domain <domain> -u <username> -p <password> <command>
+    description: >-
+      Executes a command through a scheduled task, which is useful where the
+      service control manager is restricted.
+    tags: [smb, execution, scheduled-task]
+  - name: impacket-smbclient
+    syntax: impacket-smbclient -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Opens an interactive SMB session and exposes commands to list, download
+      and upload files on the remote share.
+    tags: [smb, files, interactive]
+  - name: impacket-mimikatz
+    syntax: impacket-mimikatz -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Runs a Mimikatz module remotely, for example sekurlsa::logonpasswords to
+      recover cached credentials from a host.
+    tags: [credentials, post-exploitation]
+    notes: Requires administrative rights on the target.
+  - name: impacket-ntlmrelayx
+    syntax: impacket-ntlmrelayx -target <dc-ip> -smb2support
+    description: >-
+      Listens for incoming SMB traffic and relays the captured authentication
+      to a chosen protocol, optionally with --remove-mic.
+    tags: [relay, ntlm, smb]
+    notes: >-
+      Relaying is a defensive and offensive technique; only use it on systems
+      you are authorised to test.
+  - name: impacket-mssqlclient
+    syntax: impacket-mssqlclient -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Opens an interactive MS-SQL session and can run queries or invoke xp_cmdshell
+      when the login is a sysadmin.
+    tags: [mssql, interactive]
+  - name: impacket-mrpclogin
+    syntax: impacket-mrpclogin -target <dc-ip> -domain <domain> -u <username> -p <password>
+    description: >-
+      Authenticates to the MS-RPC endpoint mapper to confirm that the
+      credentials are valid and to list the exposed RPC interfaces.
+    tags: [rpc, credentials, enumeration]
+  - name: impacket-reg
+    syntax: impacket-reg -target <dc-ip> -domain <domain> -u <username> -p <password> -action <query|dump|create|delete> -name <name>
+    description: >-
+      Reads and modifies remote registry hives, including the Run keys used for
+      persistence and the LSA secrets of a host.
+    tags: [registry, persistence, credentials]
+  - name: impacket-winexec
+    syntax: impacket-winexec -target <dc-ip> -domain <domain> -u <username> -p <password> -x <binary-path>
+    description: >-
+      Uploads a Windows PE binary, installs it as a service, executes it and
+      removes it again.
+    tags: [smb, execution, remote]

@@ -1,0 +1,4 @@
+# Runtime dependencies for synx.
+# The CLI is built on argparse (standard library), PyYAML and rich.
+PyYAML>=6.0
+rich>=13.0

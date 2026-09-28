@@ -1,0 +1,85 @@
+name: bloodhound-python
+aliases:
+  - bloodhound.py
+  - bhpython
+  - bloodhound-ce-python
+category: active-directory
+homepage: https://github.com/fox-it/BloodHound
+description: >-
+  Python data collector for BloodHound. It queries LDAP and SMB to build a
+  graph of users, groups, sessions, ACLs and computer objects, and writes the
+  result as a ZIP that the BloodHound GUI can import.
+notes: >-
+  Collection requires LDAP and at least one working protocol such as SMB or LDAP
+  on the target domain. The GUI is a separate application; this file documents
+  the collector only. Releases before 2023 used -dc-ip for the DNS server, which
+  is now -ns, and older versions are invoked as bloodhound.py.
+commands:
+  - name: Full collection
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all --zip
+    description: >-
+      Collects the domain data with all available methods and writes it to a ZIP
+      file ready for import into BloodHound.
+    tags: [collection, bloodhound, ldap, smb]
+    example: bloodhound-python -u 'user' -p 'password' -d corp.local -ns 10.0.0.1 -c all --zip
+  - name: Specific collection methods
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c Group,LocalAdmin,Session
+    description: >-
+      Runs a comma-separated list of methods. The available values are Group,
+      LocalAdmin, Session, Trusts, ObjectProps, ACL, Container, DCOM, RDP,
+      PSRemote, LoggedOn, DCOnly, Default and All.
+    tags: [collection, bloodhound]
+  - name: LDAP only collection
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c DCOnly
+    description: >-
+      Collects only from the domain controller over LDAP and makes no connection
+      to member computers at all.
+    tags: [collection, ldap, dc-only]
+  - name: BloodHound CE variant
+    syntax: bloodhound-ce-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all --zip
+    description: >-
+      The current BloodHound CE releases install the collector under this name;
+      it takes the same options.
+    tags: [collection, bloodhound, ce]
+  - name: Target domain controller
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -dc <hostname> -c all
+    description: >-
+      Overrides which domain controller to query; -gc does the same for the
+      global catalog.
+    tags: [collection, ldap]
+  - name: Pass-the-hash
+    syntax: bloodhound-python -u <username> --hashes <lmhash>:<nthash> -d <domain> -ns <dc-ip> -c all
+    description: Authenticates with an NTLM hash in LM:NT form instead of a plaintext password.
+    tags: [credentials, pass-the-hash, ntlm]
+  - name: Kerberos authentication
+    syntax: bloodhound-python -u <username> -k -d <domain> -ns <dc-ip> -c all
+    description: >-
+      Uses a Kerberos ticket rather than NTLM; the collector needs to resolve
+      the domain FQDN, so pointing -ns at a DC is not enough on its own.
+    tags: [credentials, kerberos]
+  - name: LDAPS connection
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all --use-ldaps
+    description: Uses LDAPS on port 636 instead of plain LDAP on port 389.
+    tags: [ldap, ldaps]
+  - name: Computer allowlist
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all --computerfile <path>
+    description: >-
+      Restricts computer enumeration to the FQDNs listed in the file, and
+      --exclude-dcs leaves the domain controllers out instead.
+    tags: [collection, enumeration]
+  - name: Worker count
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all -w <workers>
+    description: Sets how many workers query member computers at once; the default is 10.
+    tags: [collection, performance]
+  - name: Output prefix
+    syntax: bloodhound-python -u <username> -p <password> -d <domain> -ns <dc-ip> -c all -op <prefix>
+    description: >-
+      Names the generated files with the given prefix instead of a timestamp, so
+      repeated runs are easy to tell apart.
+    tags: [output]
+  - name: Help
+    syntax: bloodhound-python --help
+    description: >-
+      Lists every collection method and output option supported by the installed
+      version.
+    tags: [help, reference]

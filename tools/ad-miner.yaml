@@ -1,0 +1,81 @@
+name: ad-miner
+aliases:
+  - AD-miner
+  - AD_Miner
+category: active-directory
+homepage: https://github.com/AD-Security/AD_Miner
+description: >-
+  Audits a BloodHound graph by running a large set of Cypher queries against the
+  Neo4j database and turning the answers into an HTML report. It highlights
+  misconfigurations such as paths to Domain Admin, dangerous ACLs, stale
+  accounts and password policy weaknesses.
+notes: >-
+  This is an offline reporting tool: it needs a Neo4j instance that already holds
+  a BloodHound import, not a domain controller. Cache files are written after
+  each query so a long run can be paused and resumed with -c.
+commands:
+  - name: Basic report
+    syntax: AD-miner -cf <report-name> -u <username> -p <password>
+    description: >-
+      Runs the full analysis against the default Neo4j instance and writes the
+      HTML report under the given cache prefix.
+    tags: [reporting, bloodhound, neo4j]
+  - name: Custom Neo4j server
+    syntax: AD-miner -b <bolt-uri> -cf <report-name> -u <username> -p <password>
+    description: >-
+      Points the tool at a different Neo4j instance; the default is
+      bolt://127.0.0.1:7687.
+    tags: [reporting, neo4j]
+  - name: Resume from cache
+    syntax: AD-miner -c -cf <report-name> -u <username> -p <password>
+    description: >-
+      Reuses the locally cached Neo4j results instead of querying again, so an
+      interrupted run continues where it stopped. The prefix must match the
+      original run.
+    tags: [reporting, cache]
+  - name: Extract date
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> -e <yyyymmdd>
+    description: >-
+      Sets the reference date used for age and staleness calculations, which
+      otherwise defaults to the last logon date found in the database.
+    tags: [reporting]
+  - name: Password renewal policy
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> -r <days>
+    description: Changes the number of days after which a password counts as due for renewal; the default is 90.
+    tags: [reporting, policy]
+  - name: Path query depth
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> -l <level>
+    description: >-
+      Sets how many hops the path queries follow. Deeper levels find more paths
+      and make the run considerably slower.
+    tags: [reporting, paths]
+  - name: Faster GPO query
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> --gpo_low
+    description: Runs a quicker but incomplete Group Policy Object query.
+    tags: [reporting, performance]
+  - name: CanRDP edge
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> --rdp
+    description: Includes the CanRDP relationship in the graphs it draws.
+    tags: [reporting, rdp]
+  - name: Parallel queries
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> -ch <chunks> -co <cores>
+    description: >-
+      Splits the queries across a number of chunks and cores; the defaults
+      follow the number of CPUs on the machine.
+    tags: [reporting, performance]
+  - name: Clustered Neo4j
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> --cluster <nodes>
+    description: >-
+      Spreads the queries over a Neo4j cluster, given as
+      host:port:cores,host:port:cores entries.
+    tags: [reporting, neo4j]
+  - name: Evolution over time
+    syntax: AD-miner -cf <report-name> -u <username> -p <password> --evolution <path>
+    description: >-
+      Compares the current database against previously exported JSON results to
+      show how the domain posture changed.
+    tags: [reporting, evolution]
+  - name: Help
+    syntax: AD-miner -h
+    description: Lists every option supported by the installed version.
+    tags: [help, reference]

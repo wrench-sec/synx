@@ -1,0 +1,50 @@
+name: evil-winrm
+aliases:
+  - evilwinrm
+  - evil-winrm.rb
+category: remote-access
+homepage: https://github.com/EvilShrimps/Evil-WinRM
+description: >-
+  Windows Remote Management (WinRM) shell in the style of Evil-PS1. It opens
+  an interactive PowerShell session on a Windows host and can run a single
+  command or an uploaded script instead.
+notes: >-
+  WinRM must be enabled and reachable on the target. Use --ssl when the host
+  only speaks HTTPS.
+commands:
+  - name: Interactive shell
+    syntax: evil-winrm -i <target> -u <username> -p <password>
+    description: >-
+      Starts an interactive PowerShell session on the target with the supplied
+      credentials.
+    tags: [winrm, interactive, powershell]
+    example: evil-winrm -i 10.0.0.5 -u 'user' -p 'password'
+  - name: Single command
+    syntax: evil-winrm -i <target> -u <username> -p <password> -c <command>
+    description: Runs one command on the remote host and prints its output.
+    tags: [winrm, execution]
+  - name: Run a script
+    syntax: evil-winrm -i <target> -u <username> -p <password> -s <script-path>
+    description: >-
+      Uploads a PowerShell script to the target, executes it and removes the
+      uploaded file again.
+    tags: [winrm, execution, powershell]
+  - name: Pass-the-hash
+    syntax: evil-winrm -i <target> -u <username> -H <ntlm-hash>
+    description: >-
+      Authenticates with an NTLM hash instead of a password, which is useful
+      when only hashes are available.
+    tags: [winrm, ntlm, credentials]
+    notes: Requires the target to accept NTLM over WinRM.
+  - name: Domain and port
+    syntax: evil-winrm -i <target> -d <domain> -u <username> -p <password> -P <port>
+    description: >-
+      Authenticates with a fully qualified domain account on a non-standard
+      WinRM port.
+    tags: [winrm, credentials]
+  - name: HTTPS
+    syntax: evil-winrm -i <target> -u <username> -p <password> --ssl
+    description: >-
+      Uses HTTPS for the WinRM channel, which is the default on current Windows
+      installations.
+    tags: [winrm, ssl]

@@ -1,0 +1,70 @@
+name: pypykatz
+aliases:
+  - pypykatz.exe
+category: credential-dumping
+homepage: https://github.com/skelsec/pypykatz
+description: >-
+  Mimikatz implemented in pure Python, so it runs on any platform that has
+  Python 3.7 or newer rather than only on Windows. It parses LSASS memory,
+  registry hives, DPAPI secrets and Kerberos material either live or from files
+  taken from another system.
+notes: >-
+  Most commands come in two forms: a 'live' variant that reads the current
+  Windows machine and a normal variant that works on an offline file, so the
+  same parsing logic can be reused elsewhere. Parsing is based on the public
+  structure layouts, so results should be verified before being relied upon.
+commands:
+  - name: LSASS minidump
+    syntax: pypykatz lsa minidump <lsass-dump>
+    description: >-
+      Parses an LSASS minidump file and prints the cached credentials, hashes
+      and Kerberos material it contains.
+    tags: [lsass, credentials, offline]
+  - name: LSASS live
+    syntax: pypykatz lsa live
+    description: Reads the memory of the LSASS process on the current Windows host directly.
+    tags: [lsass, credentials, live]
+    notes: Requires administrative rights on the host.
+  - name: Registry SAM
+    syntax: pypykatz registry --sam <sam-hive> --system <system-hive>
+    description: >-
+      Extracts the local account hashes from an offline SAM hive; the SYSTEM
+      hive is needed to decrypt them.
+    tags: [registry, credentials, offline]
+  - name: Registry LSA secrets
+    syntax: pypykatz registry lsecrets --nt <nt-hive> --system <system-hive>
+    description: Recovers the LSA secrets of a host from its offline NTDS-related hives.
+    tags: [registry, credentials, offline]
+  - name: Mimikatz-compatible modules
+    syntax: pypykatz <module>::<command>
+    description: >-
+      Runs a module using the same module::command syntax as Mimikatz, such as
+      sekurlsa::logonpasswords or lsadump::sam, so existing knowledge carries
+      over.
+    tags: [mimikatz, credentials]
+  - name: JSON output
+    syntax: pypykatz lsa minidump <lsass-dump> -o json
+    description: Writes the parsed secrets as JSON instead of formatted text.
+    tags: [output, json]
+  - name: Greppable output
+    syntax: pypykatz lsa minidump <lsass-dump> -o grep
+    description: Emits one credential per line, which is convenient for filtering and piping.
+    tags: [output, grep]
+  - name: DPAPI secrets
+    syntax: pypykatz dpapi::dpapi <credential-file>
+    description: Decrypts DPAPI protected blobs such as browser or RDP credentials.
+    tags: [dpapi, credentials]
+  - name: Kerberos tickets
+    syntax: pypykatz kerberos::tickets <lsass-dump>
+    description: Lists the Kerberos tickets and cached secrets found in a parsed LSASS image.
+    tags: [kerberos, tickets]
+  - name: Rekall memory dump
+    syntax: pypykatz rekall <memory-dump> -t 0
+    description: >-
+      Parses a full memory image through Rekall rather than an LSASS minidump.
+      The -t flag sets the timestamp override, which is 0 or 1.
+    tags: [memory, offline]
+  - name: Help
+    syntax: pypykatz --help
+    description: Lists every source and module available in the installed version.
+    tags: [help, reference]

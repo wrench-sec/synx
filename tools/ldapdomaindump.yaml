@@ -1,0 +1,84 @@
+name: ldapdomaindump
+category: active-directory
+homepage: https://github.com/dirkjanm/ldapdomaindump
+description: >-
+  Collects the users, groups, computers, policies and trusts of a directory over
+  LDAP and writes them as HTML, JSON and greppable tables. Most of what it reads
+  is visible to any authenticated user, so a single low-privileged account
+  yields a full overview of the domain.
+notes: >-
+  Omit -u for an anonymous bind. The output directory defaults to the current
+  one. The bundled ldd2pretty and ldd2bloodhound utilities reformat the JSON
+  results.
+commands:
+  - name: Full domain dump
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> <dc-ip>
+    description: >-
+      Dumps the whole domain and writes the HTML, JSON and greppable files into
+      the output directory.
+    tags: [ldap, enumeration, dump]
+    example: ldapdomaindump -u 'CORP\user' -p 'password' 10.0.0.1
+  - name: Anonymous dump
+    syntax: ldapdomaindump <dc-ip>
+    description: Collects the directory without authenticating, for servers that allow anonymous binds.
+    tags: [ldap, enumeration, anonymous]
+  - name: LDAPS connection
+    syntax: ldapdomaindump <host> ldaps://<dc-ip>:636 -u <domain>\\<username> -p <password>
+    description: >-
+      Connects over LDAPS instead of plain LDAP by passing a connection string
+      that starts with ldaps://.
+    tags: [ldap, ldaps, enumeration]
+  - name: Output directory
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> -o <path> <dc-ip>
+    description: Writes every generated file into the chosen directory.
+    tags: [output]
+  - name: JSON only
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> --no-html --no-grep <dc-ip>
+    description: >-
+      Emits only the machine-readable JSON files, which is the useful mode when
+      the results feed another tool.
+    tags: [output, json]
+  - name: Grouped JSON
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> --grouped-json <dc-ip>
+    description: >-
+      Also writes JSON for the grouped files, that is users per group and
+      computers per operating system.
+    tags: [output, json]
+  - name: Simple authentication
+    syntax: ldapdomaindump -at SIMPLE -u <domain>\\<username> -p <password> <dc-ip>
+    description: >-
+      Uses SIMPLE instead of the default NTLM authentication, for the rare server
+      that does not offer NTLM binds.
+    tags: [ldap, authentication]
+  - name: Pass-the-hash
+    syntax: ldapdomaindump -u <domain>\\<username> -p :<ntlm-hash> <dc-ip>
+    description: Authenticates with an NTLM hash in LM:NT form rather than a plaintext password.
+    tags: [credentials, pass-the-hash, ntlm]
+  - name: Resolve hostnames
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> -r <dc-ip>
+    description: >-
+      Resolves the DNSHostName attribute of every computer account to an
+      address, which is thorough but can be slow and noisy on large domains.
+    tags: [dns, enumeration]
+  - name: Custom DNS resolver
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> -n <dc-ip> <dc-ip>
+    description: >-
+      Resolves names through the given server instead of the system resolver,
+      usually by pointing it at a domain controller.
+    tags: [dns]
+  - name: Minimal attribute set
+    syntax: ldapdomaindump -u <domain>\\<username> -p <password> -m <dc-ip>
+    description: >-
+      Queries only the attributes shown in the default HTML and greppable
+      output, which keeps memory use low on large domains.
+    tags: [performance]
+  - name: Convert to BloodHound CSV
+    syntax: ldd2bloodhound <dump-directory>
+    description: >-
+      Turns the users, groups, computers and trusts JSON files into the
+      group_membership.csv and trust.csv files that BloodHound 1.x accepts.
+    tags: [bloodhound, conversion]
+  - name: Pretty-print a dump
+    syntax: ldd2pretty <dump-directory>
+    description: Renders the JSON results in the plain, enum4linux-like layout.
+    tags: [output]

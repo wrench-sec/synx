@@ -1,0 +1,3 @@
+"""Type marker for the synx package (PEP 561)."""
+
+from __future__ import annotations

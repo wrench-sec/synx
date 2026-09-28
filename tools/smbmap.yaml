@@ -1,0 +1,102 @@
+name: smbmap
+aliases:
+  - smbmap.py
+category: smb
+homepage: https://github.com/ShawnDEvans/SMBMap
+description: >-
+  Enumerates the SMB shares of a Windows or Samba host or of a whole domain.
+  It reports the permissions on each share, lists and searches their contents,
+  transfers files, and can run a command on the remote machine.
+notes: >-
+  Passwords and NTLM hashes both go in -p, with hashes written as LMHASH:NTHASH.
+  Recursive content search needs administrative rights and PowerShell on the
+  target. The Kerberos support in this tool is still marked as beta.
+commands:
+  - name: List shares
+    syntax: smbmap -H <dc-ip> -u <username> -p <password>
+    description: >-
+      Connects to the target and lists every share with its permissions, which
+      is the quickest way to see what is exposed.
+    tags: [smb, shares, enumeration]
+  - name: List shares with a hash
+    syntax: smbmap -H <dc-ip> -u <username> -p <lmhash>:<nthash>
+    description: Authenticates with an NTLM hash in LM:NT form instead of a plaintext password.
+    tags: [smb, pass-the-hash, ntlm]
+  - name: Specify a domain
+    syntax: smbmap -H <dc-ip> -d <domain> -u <username> -p <password>
+    description: >-
+      Authenticates against a domain rather than the default WORKGROUP, which is
+      what is normally wanted inside Active Directory.
+    tags: [smb, credentials]
+  - name: List drives
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -L
+    description: >-
+      Lists the local and network drives mapped on the target; it needs
+      administrative rights.
+    tags: [smb, drives, privileges]
+  - name: Recursive listing
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -r <share>
+    description: >-
+      Walks a share recursively; leave the path empty to list the root of every
+      share. Limit the depth with --depth.
+    tags: [smb, files, enumeration]
+  - name: Quiet recursive listing
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -r <share> --depth 2 -q
+    description: >-
+      Walks a share to a given depth and only prints the shares where the
+      account has read or write access, which keeps the output short.
+    tags: [smb, files]
+  - name: Filename pattern search
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -r <share> -A <pattern>
+    description: >-
+      Searches the share for files whose name matches the regular expression and
+      downloads every match; the pattern is not case sensitive.
+    tags: [smb, files, search]
+  - name: File content search
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -F <pattern>
+    description: >-
+      Searches the contents of files on the target with PowerShell and returns
+      the matches. Requires administrative rights and is described as
+      experimental by the author.
+    tags: [smb, search, content]
+    notes: Set the starting point with --search-path; the default is C:\Users.
+  - name: Download a file
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> --download <remote-path>
+    description: Copies a single file from the target to the current directory.
+    tags: [smb, files]
+  - name: Upload a file
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> --upload <local-path> <remote-path>
+    description: Copies a local file onto a share the account can write to.
+    tags: [smb, files]
+  - name: Remote command
+    syntax: smbmap -H <dc-ip> -u <username> -p <password> -x <command>
+    description: >-
+      Runs a command on the target and returns its output. Select wmi or psexec
+      with --mode.
+    tags: [smb, execution, remote]
+  - name: SMB signing check
+    syntax: smbmap --host-file <path> --signing
+    description: >-
+      Reports whether SMB signing is disabled, enabled but not required, or
+      required on each host in the file.
+    tags: [smb, signing, enumeration]
+  - name: Host version
+    syntax: smbmap --host-file <path> -v
+    description: >-
+      Prints the operating system version, build and name of every host in the
+      list.
+    tags: [smb, enumeration]
+  - name: Host file
+    syntax: smbmap --host-file <path> -u <username> -p <password>
+    description: >-
+      Runs against many hosts at once; the file accepts addresses, host names
+      and CIDR ranges.
+    tags: [smb, enumeration]
+  - name: Kerberos authentication
+    syntax: smbmap -H <dc-ip> -d <domain> -k --dc-ip <dc-ip>
+    description: Uses Kerberos instead of NTLM, optionally against a specific domain controller.
+    tags: [smb, kerberos]
+  - name: Help
+    syntax: smbmap -h
+    description: Lists every option supported by the installed version.
+    tags: [help, reference]

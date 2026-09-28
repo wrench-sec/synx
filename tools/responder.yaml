@@ -1,0 +1,46 @@
+name: responder
+aliases:
+  - responder.py
+  - llmnr-responder
+  - nbns-responder
+category: network
+homepage: https://github.com/lgandx/Responder
+description: >-
+  Listener for LLMNR, NBT-NS and MDNS name resolution requests. It answers
+  name lookups with its own address so that the requesting client authenticates
+  to it, and it can capture NetBIOS and NTLM challenge responses.
+notes: >-
+  Responder needs raw sockets, so it must run as root. Only run it on networks
+  and hosts where you have explicit authorisation.
+commands:
+  - name: Basic listener
+    syntax: sudo responder -I <interface>
+    description: >-
+      Listens on the given interface, answers LLMNR, NBT-NS and MDNS queries
+      and prints the captured hashes.
+    tags: [llmnr, nbns, ntlm, network]
+    example: sudo responder -I eth0
+  - name: Analyse mode
+    syntax: sudo responder -I <interface> -A
+    description: >-
+      Only answers multicast name queries and records which hosts respond,
+      without poisoning anything.
+    tags: [analysis, network, enumeration]
+  - name: Verbose listener
+    syntax: sudo responder -I <interface> -v
+    description: >-
+      Runs the listener in verbose mode so that every request, response and
+      captured hash is written to the console and to the Responder.log file.
+    tags: [llmnr, ntlm, logging]
+  - name: Passive mode
+    syntax: sudo responder -I <interface> -P
+    description: >-
+      Listens without sending any answers at all, which is useful to observe
+      name resolution traffic on a live network.
+    tags: [passive, network]
+  - name: Hash capture only
+    syntax: sudo responder -I <interface> -H
+    description: >-
+      Captures NTLM challenge responses from the name services and stores them
+      in the log directory without the poisoning modules.
+    tags: [ntlm, capture, network]

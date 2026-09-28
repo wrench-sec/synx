@@ -1,0 +1,93 @@
+name: kerbrute
+category: credential-attacks
+homepage: https://github.com/ropnop/kerbrute
+description: >-
+  Enumerates valid Active Directory accounts and tests credentials over the
+  Kerberos pre-authentication exchange. Because it validates through Kerberos
+  rather than SMB it is fast, and failed pre-authentication does not create the
+  familiar failed logon events.
+notes: >-
+  Give either a domain with -d or a domain controller with --dc; without a DC
+  the KDC is looked up over DNS. Every mode except userenum counts towards the
+  lockout counter, so check the policy first. --safe aborts as soon as an
+  account comes back locked out.
+commands:
+  - name: User enumeration
+    syntax: kerbrute userenum -d <domain> <wordlist>
+    description: >-
+      Sends TGT requests without pre-authentication and reports which usernames
+      the KDC recognises, without causing any failed logon.
+    tags: [enumeration, kerberos, users]
+    example: kerbrute userenum -d corp.local users.txt
+  - name: Password spray
+    syntax: kerbrute passwordspray -d <domain> <user-list> <password>
+    description: >-
+      Tests a single password against every account in the list, which is the
+      right shape for a domain without an account lockout policy.
+    tags: [credentials, kerberos, spray]
+    notes: >-
+      Failed pre-authentication counts as a failed logon and can lock accounts
+      out. This is a documented interface only; synx never runs it for you and
+      you must be authorised on the target.
+  - name: Brute a single user
+    syntax: kerbrute bruteuser -d <domain> <wordlist> <username>
+    description: >-
+      Tests a whole wordlist against one account, which should only be done when
+      you are certain no lockout policy applies.
+    tags: [credentials, kerberos]
+    notes: >-
+      Only use this on systems you are authorised to test, and only when the
+      lockout policy is known to be absent or generous.
+  - name: Brute a combination list
+    syntax: kerbrute bruteforce -d <domain> <path>
+    description: >-
+      Tests username:password pairs read from a file, or from standard input
+      when the path is a single dash.
+    tags: [credentials, kerberos]
+  - name: Specific domain controller
+    syntax: kerbrute userenum --dc <dc-ip> -d <domain> <wordlist>
+    description: >-
+      Targets one domain controller instead of resolving the KDC over DNS.
+    tags: [enumeration, kerberos]
+  - name: Thread count
+    syntax: kerbrute passwordspray -d <domain> -t <threads> <user-list> <password>
+    description: >-
+      Sets the number of concurrent attempts; the default is 10 threads.
+    tags: [performance]
+  - name: Safe mode
+    syntax: kerbrute passwordspray -d <domain> --safe <user-list> <password>
+    description: >-
+      Stops every thread as soon as an account is reported as locked out, which
+      limits the damage of a mistaken policy assumption.
+    tags: [safety, kerberos]
+  - name: Delay between attempts
+    syntax: kerbrute passwordspray -d <domain> --delay <ms> <user-list> <password>
+    description: >-
+      Waits the given number of milliseconds between attempts; setting a delay
+      forces single-threaded operation.
+    tags: [performance, safety]
+  - name: Log file
+    syntax: kerbrute userenum -d <domain> -o <path> <wordlist>
+    description: >-
+      Writes the results to a file in addition to standard output.
+    tags: [output]
+  - name: Save captured hashes
+    syntax: kerbrute userenum -d <domain> --hash-file <path> <wordlist>
+    description: >-
+      Stores any AS-REP hashes that are captured during the run instead of only
+      logging them.
+    tags: [asrep, kerberos]
+  - name: Verbose failures
+    syntax: kerbrute passwordspray -d <domain> -v <user-list> <password>
+    description: >-
+      Logs failed attempts and errors as well as the successes, which produces a
+      much larger log.
+    tags: [output]
+  - name: Force weak encryption
+    syntax: kerbrute userenum -d <domain> --downgrade <wordlist>
+    description: Requests the downgraded RC4-HMAC-MD5 encryption type.
+    tags: [kerberos, encryption]
+  - name: Version
+    syntax: kerbrute version
+    description: Prints the build information of the installed binary.
+    tags: [help, reference]

@@ -1,0 +1,71 @@
+name: nmap
+aliases:
+  - nmap.org
+category: network
+homepage: https://nmap.org/book/man.html
+description: >-
+  Network exploration and port scanning utility. Nmap discovers hosts, scans
+  ports, identifies service versions and runs NSE scripts to answer specific
+  questions about a target.
+notes: >-
+  Raw-socket scan types such as -sS and UDP scans need root privileges. Only
+  scan networks you are authorised to test.
+commands:
+  - name: Host discovery
+    syntax: nmap -sn <target>
+    description: >-
+      Discovers the live hosts on the target network without sending any port
+      scan probes.
+    tags: [discovery, enumeration]
+    example: nmap -sn 10.0.0.0/24
+  - name: TCP connect scan
+    syntax: nmap -sT -p- <target>
+    description: >-
+      Scans all 65535 TCP ports with a full connect, which works without root
+      privileges and on hosts that drop SYN packets.
+    tags: [scanning, tcp, ports]
+  - name: SYN scan
+    syntax: sudo nmap -sS -p- <target>
+    description: >-
+      Sends a half-open SYN scan over all TCP ports, which is faster and less
+      intrusive than a connect scan.
+    tags: [scanning, tcp, ports]
+    notes: Requires root for raw sockets.
+  - name: Service and script detection
+    syntax: nmap -sV -sC -p- <target>
+    description: >-
+      Identifies the service and version behind each open port and runs the
+      default set of NSE scripts.
+    tags: [enumeration, services, nse]
+  - name: NSE scripts
+    syntax: nmap -p <port> --script <script-name> <target>
+    description: >-
+      Runs a named NSE script, or a whole script category, against the target
+      ports.
+    tags: [nse, enumeration]
+    example: nmap -p 445 --script smb-vuln-ms17-010 10.0.0.5
+  - name: Vulnerability scripts
+    syntax: nmap -p <port> --script vuln <target>
+    description: >-
+      Runs the vulnerability-detection scripts and lists the issues they
+      report.
+    tags: [nse, vulnerabilities]
+  - name: Kerberos enumeration
+    syntax: nmap -p 88 --script krb5-enum-users --script-args krb5-domain:<domain> <target>
+    description: >-
+      Queries the Kerberos KDC for the user and service principal names it
+      knows about.
+    tags: [kerberos, nse, enumeration]
+  - name: Output formats
+    syntax: nmap -oN <file> -oX <file> -oG <file> <target>
+    description: >-
+      Writes the results in normal, XML and grepable format at the same time,
+      so the scan can be processed by other tools.
+    tags: [output, reporting]
+  - name: UDP scan
+    syntax: sudo nmap -sU -p- --min-rate <rate> <target>
+    description: >-
+      Scans all UDP ports, which is slow because most services do not answer
+      closed ports, so a minimum rate should be set.
+    tags: [scanning, udp, ports]
+    notes: Requires root and takes considerably longer than a TCP scan.

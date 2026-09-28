@@ -1,0 +1,144 @@
+name: rubeus
+aliases:
+  - Rubeus.exe
+  - Rubeus
+category: kerberos
+homepage: https://github.com/GhostPack/Rubeus
+description: >-
+  Kerberos abuse toolkit for Windows that requests, renews, forges and exports
+  tickets. It covers ticket requests, pass-the-ticket, kerberoasting,
+  AS-REP roasting, constrained delegation and ticket forging from a C# binary or
+  an in-memory .NET assembly.
+notes: >-
+  Rubeus uses slash-prefixed switches, not dashes, and its defaults differ
+  between releases. Where credentials are involved, run it on a Windows host you
+  control and prefer ticket-based options such as /ptt to /ptt so nothing is
+  typed onto the command line. The slash paths below are the documented
+  interface; synx never runs them for you.
+commands:
+  - name: Request a TGT
+    syntax: Rubeus.exe asktgt /user:<username> /domain:<domain> /rc4:<password> /outfile:<path>
+    description: >-
+      Asks the KDC for a ticket-granting ticket using a password or hash and
+      writes it to a file.
+    tags: [kerberos, tickets]
+    notes: >-
+      Use the /rc4, /aes128 or /aes256 switch to supply a hash instead of a
+      password.
+  - name: Request a TGT and use it
+    syntax: Rubeus.exe asktgt /user:<username> /rc4:<password> /ptt
+    description: >-
+      Requests the ticket and injects it into the current logon session so the
+      next authentication uses it.
+    tags: [kerberos, tickets, pass-the-ticket]
+  - name: Request a service ticket
+    syntax: Rubeus.exe asktgs </service:SPN> /user:<username> /rc4:<password> /outfile:<path>
+    description: Requests a service ticket for one or more service principal names.
+    tags: [kerberos, tickets]
+  - name: Request a TGT from a certificate
+    syntax: Rubeus.exe asktgt /user:<username> /certificate:<path> /domain:<domain>
+    description: >-
+      Obtains a ticket using a PKCS#12 certificate instead of a password, or a
+      certificate already in the user's keystore.
+    tags: [kerberos, certificates]
+  - name: Kerberoast
+    syntax: Rubeus.exe kerberoast /outfile:<path>
+    description: >-
+      Requests service tickets for accounts that hold a service principal name so
+      their hashes can be recovered offline without touching the services.
+    tags: [kerberoast, kerberos, credentials]
+  - name: Kerberoast a specific SPN
+    syntax: Rubeus.exe kerberoast /spn:<spn> /user:<username> /outfile:<path>
+    description: >-
+      Roasts one service principal name or one account instead of the whole
+      domain; /spns reads a list from a file.
+    tags: [kerberoast, kerberos]
+  - name: Opaque Kerberoasting
+    syntax: Rubeus.exe kerberoast /usetgtdeleg
+    description: >-
+      Uses a delegation ticket to request service tickets, which returns RC4
+      hashes even for accounts configured with AES.
+    tags: [kerberoast, kerberos]
+  - name: Filtered Kerberoasting
+    syntax: Rubeus.exe kerberoast /rc4opsec
+    description: >-
+      Roasts only the accounts that still use RC4, avoiding the noise that comes
+      from requesting RC4 tickets for AES-enabled accounts.
+    tags: [kerberoast, kerberos, opsec]
+  - name: AS-REP roasting
+    syntax: Rubeus.exe asreproast /format:hashcat /outfile:<path>
+    description: >-
+      Finds accounts without Kerberos pre-authentication and writes their
+      AS-REP hashes in a format a cracking tool can consume.
+    tags: [asrep, kerberos, credentials]
+  - name: Constrained delegation
+    syntax: Rubeus.exe s4u /user:<username> /rc4:<password> /msdsspn:<service>/<server>
+    description: >-
+      Abuses S4U to request a ticket to a service the account is allowed to
+      delegate to, optionally with /impersonateuser to act as another account.
+    tags: [delegation, kerberos, tickets]
+  - name: S4U across domains
+    syntax: Rubeus.exe s4u /user:<username> /rc4:<password> /msdsspn:<service>/<server> /targetdomain:<domain>
+    description: Requests a delegation ticket into another domain, naming its controller with /targetdc.
+    tags: [delegation, kerberos]
+  - name: Golden ticket
+    syntax: Rubeus.exe golden /ldap /user:<username> /outfile:<path>
+    description: >-
+      Forges a ticket-granting ticket, gathering the domain values it needs over
+      LDAP; explicit values can be supplied with /sid, /domain and /krbtgt.
+    tags: [forging, kerberos, tickets]
+  - name: Silver ticket
+    syntax: Rubeus.exe silver /service:<service>/<server> /user:<username> /domain:<domain> /sid:<sid> /rc4:<password>
+    description: >-
+      Forges a service ticket for a single service using that service account's
+      key, without talking to the domain controller.
+    tags: [forging, kerberos, tickets]
+  - name: Pass the ticket
+    syntax: Rubeus.exe ptt /ticket:<path>
+    description: >-
+      Injects a ticket from a file or a base64 string into the current logon
+      session, optionally targeting a specific logon ID.
+    tags: [pass-the-ticket, kerberos]
+  - name: List cached tickets
+    syntax: Rubeus.exe klist
+    description: >-
+      Shows the tickets held in the current logon session, including their
+      encryption type and lifetime.
+    tags: [tickets, kerberos, enumeration]
+  - name: Dump tickets
+    syntax: Rubeus.exe dump
+    description: >-
+      Extracts the Kerberos tickets from LSASS on the current host and saves
+      them as kirbi files.
+    tags: [tickets, kerberos, credentials]
+  - name: Describe a ticket
+    syntax: Rubeus.exe describe /ticket:<path>
+    description: >-
+      Decodes a kirbi file or base64 ticket and prints its contents, which is how
+      you check what a captured ticket actually grants.
+    tags: [tickets, kerberos]
+  - name: Pre-authentication scan
+    syntax: Rubeus.exe preauthscan /users:<path> /domain:<domain>
+    description: >-
+      Reports which accounts in the list do not require Kerberos
+      pre-authentication and are therefore roastable.
+    tags: [asrep, kerberos, enumeration]
+  - name: Kerberos password brute force
+    syntax: Rubeus.exe brute /user:<username> /rc4:<password> /users:<path>
+    description: >-
+      Tests passwords over Kerberos rather than SMB; add /noticket to only
+      report the valid password. Only use on systems you are authorised to test.
+    tags: [credentials, kerberos]
+    notes: >-
+      This is a documented interface only; synx never runs it for you and you
+      must be authorised on the target.
+  - name: Run a .NET process with a ticket
+    syntax: Rubeus.exe asktgt /user:<username> /rc4:<password> /createnetonly:<path>
+    description: >-
+      Starts a process with a network-only logon and applies the requested
+      ticket to it, which leaves the current account untouched.
+    tags: [kerberos, tickets, execution]
+  - name: Help
+    syntax: Rubeus.exe /?
+    description: Lists every module and its switches for the installed version.
+    tags: [help, reference]
