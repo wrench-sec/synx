@@ -29,6 +29,12 @@ FORBIDDEN_MODULES = {
     "pexpect",
     "paramiko",
 }
+# Refreshing the database over the network is the one feature that cannot avoid
+# the network, so update.py is allowed to shell out. The permission is per file
+# and per module rather than a blanket exemption, and
+# tests/test_update.py::test_update_only_ever_spawns_git checks that it invokes
+# the git binary with an explicit argument list and never a shell.
+ALLOWED_MODULES: dict[str, set[str]] = {"update.py": {"subprocess"}}
 FORBIDDEN_CALLS = {"system", "popen", "spawnl", "spawnv", "execv", "execve", "eval", "exec"}
 FORBIDDEN_YAML_TAGS = ("!!python/", "!!ruby/", "!!perl/", "!!bash")
 
@@ -46,7 +52,9 @@ def test_no_execution_modules_are_imported(path: Path) -> None:
             imported.update(alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             imported.add(node.module.split(".")[0])
-    assert not imported & FORBIDDEN_MODULES, f"{path.name} imports {imported & FORBIDDEN_MODULES}"
+    assert not imported & FORBIDDEN_MODULES - ALLOWED_MODULES.get(
+        path.name, set()
+    ), f"{path.name} imports {imported & FORBIDDEN_MODULES}"
 
 
 @pytest.mark.parametrize("path", SOURCE_FILES, ids=lambda path: path.name)

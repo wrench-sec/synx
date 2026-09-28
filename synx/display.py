@@ -21,6 +21,7 @@ from rich.tree import Tree
 from synx.database import DatabaseSummary, LoadIssue
 from synx.models import Command, Tool
 from synx.search import SearchHit
+from synx.update import UpdateResult
 
 __all__ = ["RULE_WIDTH", "Renderer", "highlight_syntax"]
 
@@ -296,6 +297,47 @@ class Renderer:
         for issue in issues:
             table.add_row(issue.level, issue.path, issue.message)
         self.console.print(table)
+
+    def print_update(self, result: UpdateResult) -> None:
+        """Print the outcome of a database refresh from a remote."""
+        table = Table(
+            box=box.SIMPLE_HEAD,
+            header_style="bold cyan",
+            padding=(0, 2),
+            show_header=False,
+        )
+        table.add_column("Change", style="bold", no_wrap=True)
+        table.add_column("Tools", overflow="fold")
+        for label, names in (
+            ("added", result.added),
+            ("updated", result.updated),
+            ("unchanged", result.unchanged),
+            ("removed", result.removed),
+        ):
+            if names:
+                table.add_row(label, ", ".join(names))
+        self.console.print(table)
+
+        if result.local_only:
+            self.console.print(
+                Text(
+                    f"  {len(result.local_only)} local file(s) not in the remote were kept: "
+                    + ", ".join(result.local_only),
+                    style="dim",
+                )
+            )
+            self.console.print(
+                Text("  Pass --prune to remove them.", style="dim")
+            )
+        if result.skipped:
+            self.console.print(
+                Text(
+                    f"  {len(result.skipped)} file(s) skipped because they are not valid:",
+                    style="yellow",
+                )
+            )
+            for name, reason in result.skipped:
+                self.console.print(Text(f"    {name}: {reason}", style="yellow"))
 
     def print_info(
         self,

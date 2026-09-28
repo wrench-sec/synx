@@ -105,8 +105,8 @@ python3 -m synx nxc          # from the project directory
 ## Usage
 
 ```text
-synx [-h] [-s [KEYWORD]] [-l] [-i] [--reload] [--db-path DIR] [--context N] [--json]
-     [--no-color] [--width N] [-v] [-V]
+synx [-h] [-s [KEYWORD]] [-l] [-i] [--reload] [--db-path DIR] [--update [REPO]] [--prune]
+     [--context N] [--json] [--no-color] [--width N] [-v] [-V]
      [tool] [command]
 ```
 
@@ -298,9 +298,10 @@ Database locations (lowest precedence first)
 
      #     Kind       Path                                            Tools     Files
  ──────────────────────────────────────────────────────────────────────────────────────
-   1 *     bundled    /home/user/.local/lib/python3.12/site-packages/synx/_bundled_tools  18      18
-   2 *     user       /home/user/.local/share/synx/tools                                   0       0
+    1 *     bundled    /home/user/.local/lib/python3.12/site-packages/synx/_bundled_tools  19      19
+    2 *     user       /home/user/.local/share/synx/tools                                   0       0
 ```
+
 
 Directories marked with `*` are in use. `--info --json` returns the same data as JSON.
 
@@ -313,6 +314,43 @@ Directories marked with `*` are in use. `--info --json` returns the same data as
 | 2 | invalid usage (argparse) |
 | 3 | the database could not be loaded |
 
+### Updating the database
+
+`--update` fetches a fresh copy of the `tools/` directory from a git repository
+and writes it to the per-user directory, which takes precedence over the
+definitions bundled in the wheel.
+
+```console
+$ synx --update
+
+Updated tool database from https://github.com/wrench-sec/synx.git
+
+   added     ad-miner, bloodhound-python, bloodyad, certipy, coercer, evil-winrm,
+             impacket, kerbrute, ldapdomaindump, ldapsearch, nmap, nxc, petitpotam,
+             plumhound, pypykatz, responder, rubeus, sharphound, smbmap
+```
+
+The source is chosen in this order: the argument, then `SYNX_UPDATE_REPO`, then
+the default `https://github.com/wrench-sec/synx.git`. Because it uses `git`
+directly, your existing credentials, SSH agent and proxy settings apply, so
+private repositories work without synx handling a token.
+
+```console
+$ synx --update https://github.com/yourname/your-tools-repo.git
+$ SYNX_UPDATE_REPO=/srv/local/tools synx --update
+```
+
+Notes:
+
+- Every fetched file is validated before it is written. A definition that fails
+  the schema is reported as skipped and any local copy is left alone, so a
+  broken or hostile definition cannot replace a good one.
+- Writes are atomic, so an interrupted update cannot leave a half-written file.
+- Local files the remote does not ship are **kept** and listed, because they are
+  usually hand-written additions. Pass `--prune` to delete them.
+- `--update` cannot be combined with `--list`, `--info`, `--search` or a tool
+  name. Run it, then run the command you wanted.
+
 ### Options
 
 | Option | Description |
@@ -322,6 +360,8 @@ Directories marked with `*` are in use. `--info --json` returns the same data as
 | `-i`, `--info` | application and database information |
 | `--reload` | re-read the YAML files and report what was loaded |
 | `--db-path DIR` | load only these directories (repeatable) |
+| `--update [REPO]` | refresh the database from a git repository |
+| `--prune` | with `--update`, delete local files the remote does not ship |
 | `--context N` | commands shown under a matched tool in search results (default 3) |
 | `--json` | machine-readable output instead of tables |
 | `--no-color` | disable ANSI styling |
@@ -420,10 +460,21 @@ $ synx --list -v
 `synx` is a documentation and reference tool:
 
 - It **never** executes, spawns, schedules or automates the syntax it prints. The
-  package does not import `subprocess`, `pty`, `socket` or `os.system` — the test
-  suite asserts this, and it also asserts the YAML is read with `yaml.safe_load`.
-- It never brute-forces, exploits, persists or touches a target. It has no network
-  code at all.
+  package reads YAML with `yaml.safe_load` and never calls the documented commands.
+- The only exception to "synx spawns nothing" is `--update`, which runs `git clone`
+  to fetch the database. That is a deliberate, tested exception rather than an
+  oversight:
+  - `synx/update.py` is the only module permitted to import `subprocess`, and it is
+    the only one listed in the test suite's per-file allowlist.
+  - It invokes the literal `git` binary with an explicit argument list, never a
+    shell, and the repository string is always its own `argv` element so it cannot be
+    read as shell syntax. `test_update_only_ever_spawns_git` asserts this.
+  - Nothing from the database is ever placed on a command line, which
+    `test_update_does_not_execute_database_content` asserts.
+  - Everything else still imports no `subprocess`, `pty`, `socket` or `os.system`.
+- Without `--update` there is no network code at all. With it, the only network
+  access is the `git` fetch you asked for.
+- It never brute-forces, exploits, persists or touches a target.
 - The shipped database uses placeholders (`<target>`, `<username>`, `<password>`,
   `<domain>`, `<dc-ip>`, `<port>`, `<interface>`) rather than real targets or
   credentials; the tests enforce that.
@@ -446,6 +497,7 @@ synx/
 │   ├── display.py       # all rich rendering
 │   ├── models.py        # Tool/Command dataclasses and schema validation
 │   ├── search.py        # scoring, full-text search, fuzzy suggestions
+│   ├── update.py        # --update: fetch the database from a git remote
 │   └── py.typed         # PEP 561 marker
 ├── tools/               # the YAML database (one file per tool)
 ├── tests/               # pytest suite
@@ -494,7 +546,7 @@ The suite is pytest-based and needs no network access:
 
 ```bash
 pip install -e ".[dev]"
-python3 -m pytest            # 293 tests
+python3 -m pytest            # 323 tests
 python3 -m pytest -v         # per-test names
 python3 -m pytest tests/test_database.py::TestMalformedInput
 ```
@@ -508,6 +560,7 @@ python3 -m pytest tests/test_database.py::TestMalformedInput
 | `tests/test_cli.py` | every documented invocation, exit codes, output text |
 | `tests/test_shipped_database.py` | the shipped YAML stays valid, unique and placeholder-only |
 | `tests/test_safety.py` | no execution primitives, `yaml.safe_load`, no side effects |
+| `tests/test_update.py` | `--update` against a real local git remote, validation, pruning, git-only invocation |
 | `tests/test_packaging.py` | entry point, version, dependencies, bundled data |
 
 Fixtures build a temporary database from `tests/data.py`, so tests never depend on the

@@ -20,6 +20,12 @@ from synx.display import Renderer
 from synx.models import Command, DatabaseError, Tool
 from synx.search import search as search_database
 from synx.search import suggest
+from synx.update import (
+    DEFAULT_UPDATE_REPO,
+    UPDATE_REPO_ENV_VAR,
+    UpdateError,
+    update_database,
+)
 
 __all__ = ["build_parser", "main"]
 
@@ -30,6 +36,7 @@ EXIT_DATABASE_ERROR = 3
 
 PROGRAM_NAME = "synx"
 _SEARCH_FLAG = object()
+_UPDATE_FLAG = object()
 
 DESCRIPTION = """\
 synx is a syntax and reference tool for Linux and cybersecurity utilities.
@@ -47,6 +54,7 @@ examples:
   synx nxc smb             show a single command of a tool
   synx --search kerberos   search tools, syntax and descriptions
   synx nxc --search ldap   search inside a single tool
+  synx --update            refresh the tool database from the upstream repository
 
 exit codes:
   0  success
@@ -101,6 +109,21 @@ def build_parser() -> argparse.ArgumentParser:
             "directory of YAML tool files to load instead of the defaults; "
             f"may be repeated, or set {DATABASE_ENV_VAR}"
         ),
+    )
+    parser.add_argument(
+        "--update",
+        nargs="?",
+        const=_UPDATE_FLAG,
+        metavar="REPO",
+        help=(
+            "refresh the tool database from a git repository into the per-user "
+            f"directory; defaults to {DEFAULT_UPDATE_REPO}, or set {UPDATE_REPO_ENV_VAR}"
+        ),
+    )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="with --update, delete local tool files the remote does not ship",
     )
     parser.add_argument(
         "--context",
@@ -161,6 +184,9 @@ def _silence_broken_pipe() -> None:  # pragma: no cover - depends on the consume
 
 
 def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.update is not None or args.prune:
+        return _run_update(parser, args)
+
     renderer = Renderer(no_color=args.no_color, width=args.width)
     paths = resolve_database_paths(args.db_path)
     database = CommandDatabase(paths)
@@ -195,6 +221,46 @@ def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         return EXIT_SUCCESS
 
     return _show_tool(parser, renderer, database, args)
+
+
+def _run_update(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.update is None:
+        parser.error("--prune only makes sense together with --update")
+    conflicts = [
+        label
+        for label, present in (
+            ("a tool", args.tool is not None),
+            ("a command", args.command is not None),
+            ("--search", args.search is not None),
+            ("--list", args.list),
+            ("--info", args.info),
+        )
+        if present
+    ]
+    if conflicts:
+        parser.error(f"--update cannot be combined with {', '.join(conflicts)}")
+
+    renderer = Renderer(no_color=args.no_color, width=args.width)
+    repo = None if args.update is _UPDATE_FLAG else args.update
+    try:
+        result = update_database(repo, prune=args.prune)
+    except UpdateError as exc:
+        renderer.print_error(
+            str(exc),
+            hint=(
+                f"Pass a repository explicitly, for example 'synx --update <git-url>', "
+                f"or set {UPDATE_REPO_ENV_VAR}."
+            ),
+        )
+        return EXIT_DATABASE_ERROR
+
+    if args.json:
+        renderer.print_json(result.to_dict())
+        return EXIT_SUCCESS
+    renderer.print_note(f"Updated tool database from {result.repo}")
+    renderer.blank()
+    renderer.print_update(result)
+    return EXIT_SUCCESS
 
 
 def _show_info(renderer: Renderer, database: CommandDatabase, args: argparse.Namespace) -> int:

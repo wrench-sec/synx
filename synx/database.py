@@ -31,6 +31,7 @@ __all__ = [
     "DatabaseSummary",
     "LoadIssue",
     "resolve_database_paths",
+    "user_database_directory",
 ]
 
 DATABASE_ENV_VAR = "SYNX_DB_PATH"
@@ -123,6 +124,15 @@ def _source_directory() -> Path | None:
     """Return the ``tools/`` directory of a source checkout, if present."""
     path = Path(__file__).resolve().parent.parent / "tools"
     return path if path.is_dir() else None
+
+
+def user_database_directory(env: Mapping[str, str] | None = None) -> Path:
+    """Return the per-user tools directory, which ``--update`` refreshes.
+
+    It sits after the bundled directory in precedence, so definitions written
+    here override the ones shipped in the wheel without needing a reinstall.
+    """
+    return _user_directory(os.environ if env is None else env)
 
 
 def _split_path_list(value: str) -> list[Path]:
