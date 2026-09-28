@@ -1,0 +1,177 @@
+name: ldapsearch
+category: active-directory
+homepage: https://www.openldap.org/doc/admin24/
+description: >-
+  Ships with OpenLDAP's client tools and issues an LDAP search, writing the
+  matching entries to standard output as LDIF. It is the most general LDAP
+  query tool on a Linux box: -b sets the base DN, -s the scope and -x with -D
+  and -w authenticates, while the filter and attribute list are given
+  positionally after the options.
+notes: >-
+  The filter and the attribute list are positional, so they must come after the
+  options. Omit an attribute list to get every user attribute, pass * for user
+  attributes and + for operational ones, and 1.1 to get none at all. -LLL drops
+  the LDIF comments and version header, which is what you want when the output
+  is parsed rather than read. Passwords given with -w appear in the process
+  list, so prefer -W or -y for anything sensitive. Kerberos needs a SASL
+  mechanism from -Y, because Kerberos authentication is not part of the simple
+  bind that -x performs.
+commands:
+  - name: Basic search
+    syntax: ldapsearch -x -H ldap://<dc-ip> -b <base-dn> "(objectClass=*)"
+    description: >-
+      Runs a simple-bind search over plain LDAP and prints every entry under the
+      base DN in LDIF. This is the baseline query to confirm connectivity and
+      base DN before narrowing it down.
+    tags: [ldap, enumeration, search]
+  - name: Authenticated search
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=*)"
+    description: >-
+      Binds as a specific user with simple authentication before searching, so
+      the results respect that account's read access. A plain user account is
+      enough to enumerate most of Active Directory.
+    tags: [ldap, authentication, enumeration]
+  - name: Anonymous search
+    syntax: ldapsearch -x -H ldap://<dc-ip> -b <base-dn> "(objectClass=*)"
+    description: >-
+      Searches with no bind DN or password, relying on anonymous binds being
+      enabled, which is common by default in older Active Directory.
+    tags: [ldap, anonymous, enumeration]
+  - name: Select attributes
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=user)" sAMAccountName
+    description: >-
+      Restricts the output to a named attribute, listed after the filter. Naming
+      attributes keeps the output small and fast on large domains.
+    tags: [ldap, attributes, performance]
+  - name: All user attributes
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=*)" "*"
+    description: >-
+      Requests every user attribute by passing the * token, and lets * be paired
+      with named attributes or + to also pull in operational ones.
+    tags: [ldap, attributes]
+  - name: Operational attributes
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=*)" "+"
+    description: >-
+      Returns the operational attributes, which is how created, modified and
+      lastLogonTimestamp style values are read. In Active Directory this is how
+      you get lastLogonTimestamp and pwdLastSet.
+    tags: [ldap, attributes, operational]
+  - name: Attribute names only
+    syntax: ldapsearch -A -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=*)" "*"
+    description: >-
+      Uses -A to list attribute names without their values, which is the quickest
+      way to discover what an account exposes.
+    tags: [ldap, attributes, output]
+  - name: Enumerate domain admins
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(memberOf=CN=<group>,<base-dn>)" member userPrincipalName
+    description: >-
+      Reads the member and userPrincipalName of the given group. Filtering on
+      memberOf is the standard way to expand a group's membership.
+    tags: [ldap, groups, enumeration]
+  - name: Enumerate users
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(&(objectCategory=person)(objectClass=user))" sAMAccountName distinguishedName
+    description: >-
+      Returns the sAMAccountName and distinguishedName of every user in the
+      domain, which is the classic first pass of an AD review.
+    tags: [ldap, enumeration, users]
+  - name: Enumerate computers
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=computer)" sAMAccountName operatingSystem
+    description: >-
+      Lists computer accounts with their operating system, useful for spotting
+      stale or unpatched hosts.
+    tags: [ldap, enumeration, computers]
+  - name: Non-creatable objects
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(!2.5.4.3=*)" sAMAccountName
+    description: >-
+      Finds objects with an empty CN using the not-present filter from RFC 4526,
+      which surfaces broken or orphaned directory objects.
+    tags: [ldap, enumeration, advanced]
+  - name: Base scope
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -s base "(objectClass=*)"
+    description: >-
+      Reads only the base object itself with -s base, which is the way to fetch a
+      single DN or check whether it exists.
+    tags: [ldap, scope]
+  - name: One-level scope
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -s one "(objectClass=*)"
+    description: >-
+      Searches the immediate children of the base DN only, skipping deeper
+      levels and cutting down the result set.
+    tags: [ldap, scope, performance]
+  - name: Paged results
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -E pr=500/noprompt "(objectClass=*)"
+    description: >-
+      Pulls the results in pages of 500 without prompting, which avoids the
+      server-imposed size limit on large searches and keeps memory use flat.
+    tags: [ldap, performance, paged]
+  - name: Server-side sorting
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -E sss=member "(objectClass=user)" member
+    description: >-
+      Asks the server to sort matching entries by the given attribute using the
+      RFC 2891 control, so the client does not have to buffer and sort locally.
+    tags: [ldap, output, advanced]
+  - name: Matched values
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -E mv=userCertificate "(objectClass=user)" "*"
+    description: >-
+      Applies the RFC 3876 matched-values control so the server decides which
+      values of a multi-valued attribute satisfy the condition. Here the server
+      only returns the certificates it can match, rather than every value.
+    tags: [ldap, advanced, attributes]
+  - name: StartTLS
+    syntax: ldapsearch -x -H ldap://<dc-ip>:389 -D <domain>\\<username> -W -b <base-dn> "(objectClass=*)" -Z
+    description: >-
+      Negotiates TLS on the normal LDAP port, prompting for the password with -W
+      so it never reaches the process list. Use -ZZ instead to abort if the
+      server cannot upgrade the connection.
+    tags: [ldap, tls, security]
+  - name: LDAPS
+    syntax: ldapsearch -x -H ldaps://<dc-ip>:636 -D <domain>\\<username> -W -b <base-dn> "(objectClass=*)"
+    description: >-
+      Connects over LDAPS, that is TLS from the first byte, by using the ldaps
+      scheme on port 636.
+    tags: [ldap, ldaps, tls, security]
+  - name: Prompt for password
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -W -b <base-dn> "(objectClass=*)"
+    description: >-
+      Asks for the password interactively instead of taking it as an argument,
+      which keeps it out of the shell history and the process list.
+    tags: [ldap, authentication, security]
+  - name: Password from file
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -y <file> -b <base-dn> "(objectClass=*)"
+    description: >-
+      Reads the bind password from the given file rather than the command line,
+      which suits unattended or scripted runs.
+    tags: [ldap, authentication, automation]
+  - name: Kerberos authentication
+    syntax: ldapsearch -Y GSSAPI -H ldap://<dc-ip> -U <username> -b <base-dn> "(objectClass=*)"
+    description: >-
+      Authenticates through the SASL GSSAPI mechanism, which uses the Kerberos
+      ticket cache. With no -D the server derives the bind DN from the ticket, so
+      the search runs as the ticket holder.
+    tags: [ldap, kerberos, authentication]
+  - name: Verbose output
+    syntax: ldapsearch -x -v -H ldap://<dc-ip> -D <domain>\\<username> -W -b <base-dn> "(objectClass=*)"
+    description: >-
+      Adds protocol-level diagnostics with -v, which helps when a query returns
+      nothing and you need to see the bind and search result codes.
+    tags: [ldap, output, debugging]
+  - name: Dry run
+    syntax: ldapsearch -n -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=*)"
+    description: >-
+      With -n, prints what the search would do without contacting the server or
+      printing any results, which is a cheap way to check the arguments.
+    tags: [ldap, output, testing]
+  - name: Size limit
+    syntax: ldapsearch -x -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> -z 100 "(objectClass=*)"
+    description: >-
+      Caps the number of returned entries at 100 with -z, or uses the literal
+      max to lift the client-side cap on very large searches.
+    tags: [ldap, performance, limits]
+  - name: Pretty print
+    syntax: ldapsearch -x -LLL -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=user)" sAMAccountName | ldapsearch -x -o ldif_wrap=no -LLL -H ldap://<dc-ip> -D <domain>\\<username> -w <password> -b <base-dn> "(objectClass=user)" sAMAccountName
+    description: >-
+      -LLL produces LDIF with no comments or version header, and -o
+      ldif_wrap=no stops long values from being wrapped across lines. The second
+      form shows the unwrapped variant explicitly, since the two are usually
+      combined.
+    tags: [ldap, output, ldif]

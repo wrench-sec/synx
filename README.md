@@ -148,6 +148,8 @@ $ synx --list
    kerbrute              credential-attacks          13     Enumerates valid Active Directory accounts and tests
                                                              credentials over the Kerberos pre-authentication exchange.
    ldapdomaindump        active-directory            13     Collects the users, groups, computers, policies and trusts of
+   ldapsearch            active-directory            25     OpenLDAP client that issues an LDAP search and prints the matching
+                                                            entries as LDIF.
                                                              a directory over LDAP and writes them as HTML, JSON and
                                                              greppable tables.
    nmap                  network                      9     Network exploration and port scanning utility.
@@ -166,7 +168,7 @@ $ synx --list
    smbmap                smb                         16     Enumerates the SMB shares of a Windows or Samba host or of a
                                                              whole domain.
 
-18 tool(s), 219 command(s) available.
+19 tool(s), 244 command(s) available.
 ```
 
 ### One tool, one command
@@ -290,7 +292,7 @@ $ synx --info
    Mode            Read-only reference. synx never executes commands.
    Python          3.12.3
    Package         /home/user/.local/lib/python3.12/site-packages/synx
-   Database        18 tool(s), 219 command(s)
+   Database        19 tool(s), 244 command(s)
 
 Database locations (lowest precedence first)
 
@@ -492,7 +494,7 @@ The suite is pytest-based and needs no network access:
 
 ```bash
 pip install -e ".[dev]"
-python3 -m pytest            # 288 tests
+python3 -m pytest            # 293 tests
 python3 -m pytest -v         # per-test names
 python3 -m pytest tests/test_database.py::TestMalformedInput
 ```
